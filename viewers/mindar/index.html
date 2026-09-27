@@ -21,12 +21,10 @@
         user-select: none;
       }
       
-      /* Force MindAR video feed to fit 9:16 screen */
       .mindar-ui-overlay {
         display: none !important;
       }
 
-      /* Native UI Controls */
       #hud-container {
         position: fixed;
         inset: 0;
@@ -82,7 +80,6 @@
         background: #1d4ed8;
       }
 
-      /* Hide any rogue A-Frame VR buttons */
       .a-enter-vr {
         display: none !important;
       }
@@ -90,7 +87,7 @@
   </head>
   <body>
     <div id="hud-container">
-      <div id="status-pill">Loading MindAR Engine...</div>
+      <div id="status-pill">Starting Engine...</div>
       <div id="action-bar">
         <button id="switch-btn" class="btn-switch">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -131,26 +128,37 @@
       const statusPill = document.getElementById('status-pill');
       const switchBtn = document.getElementById('switch-btn');
 
+      let hasInitializedRearCamera = false;
+      let isRearCamera = false;
+
       sceneEl.addEventListener('arReady', () => {
-        statusPill.textContent = 'Active | Rear Camera';
         const arSystem = sceneEl.systems['mindar-face-system'];
 
-        // Automatically trigger rear camera on startup
-        try {
-          arSystem.switchCamera();
-        } catch (err) {
-          console.error('Auto switch error:', err);
+        // Initial launch flip to rear camera - executes only once
+        if (!hasInitializedRearCamera) {
+          hasInitializedRearCamera = true;
+          isRearCamera = true;
+          statusPill.textContent = 'Active | Rear Camera';
+          setTimeout(() => {
+            arSystem.switchCamera();
+          }, 300);
+        } else {
+          statusPill.textContent = isRearCamera ? 'Active | Rear Camera' : 'Active | Front Camera';
         }
+      });
 
-        switchBtn.addEventListener('click', () => {
+      // User tap listener: toggle camera and track state cleanly
+      switchBtn.addEventListener('click', () => {
+        const arSystem = sceneEl.systems['mindar-face-system'];
+        if (arSystem) {
+          isRearCamera = !isRearCamera;
+          statusPill.textContent = isRearCamera ? 'Active | Rear Camera' : 'Active | Front Camera';
           arSystem.switchCamera();
-          const isRear = statusPill.textContent.includes('Rear');
-          statusPill.textContent = isRear ? 'Active | Front Camera' : 'Active | Rear Camera';
-        });
+        }
       });
 
       sceneEl.addEventListener('arError', () => {
-        statusPill.textContent = 'Camera permission denied or unavailable';
+        statusPill.textContent = 'Camera initialization failed';
       });
     </script>
   </body>
