@@ -7,24 +7,54 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-face-aframe.prod.js"></script>
     <style>
       body { margin: 0; overflow: hidden; }
-      #ui-overlay {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        z-index: 999;
+      #ui-controls {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9999;
+        display: flex;
+        gap: 12px;
+      }
+      .ar-btn {
+        background: rgba(0, 0, 0, 0.75);
+        color: #ffffff;
+        border: 1px solid #ffffff44;
+        padding: 10px 18px;
+        border-radius: 20px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        outline: none;
+      }
+      .ar-btn:active {
+        background: #2563eb;
+      }
+      #status-pill {
+        position: fixed;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9999;
+        background: rgba(0, 0, 0, 0.6);
         color: #fff;
-        background: rgba(0,0,0,0.6);
-        padding: 8px 14px;
-        border-radius: 6px;
+        padding: 6px 14px;
+        border-radius: 12px;
         font-family: sans-serif;
-        font-size: 13px;
+        font-size: 12px;
+        pointer-events: none;
       }
     </style>
   </head>
   <body>
-    <div id="ui-overlay">Rear Camera Active | Point at target face</div>
+    <div id="status-pill">Initializing AR Engine...</div>
+    <div id="ui-controls">
+      <button class="ar-btn" id="flip-cam-btn">Switch Camera</button>
+    </div>
+
     <a-scene
-      mindar-face="filterMinCF:0.001; filterBeta: 0.01; facingMode: environment"
+      mindar-face
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights: true"
       vr-mode-ui="enabled: false"
@@ -36,11 +66,8 @@
 
       <a-camera active="false" position="0 0 0"></a-camera>
 
-      <!-- Face Tracker Anchor -->
       <a-entity mindar-face-target="anchorIndex: 168">
-        <!-- Built-in head occluder for depth masking -->
         <a-entity mindar-face-occluder></a-entity>
-        <!-- Centered, normalized helmet -->
         <a-gltf-model
           src="#helmetModel"
           position="0 0 0"
@@ -49,5 +76,31 @@
         </a-gltf-model>
       </a-entity>
     </a-scene>
+
+    <script>
+      const sceneEl = document.querySelector('a-scene');
+      const statusPill = document.getElementById('status-pill');
+      const flipBtn = document.getElementById('flip-cam-btn');
+
+      sceneEl.addEventListener('arReady', () => {
+        statusPill.textContent = 'AR Ready: Rear Camera Active';
+        const arSystem = sceneEl.systems['mindar-face-system'];
+        
+        // Auto-switch to rear camera on startup
+        try {
+          arSystem.switchCamera();
+        } catch (e) {
+          console.warn('Initial switch camera error:', e);
+        }
+
+        flipBtn.addEventListener('click', () => {
+          arSystem.switchCamera();
+        });
+      });
+
+      sceneEl.addEventListener('arError', () => {
+        statusPill.textContent = 'Camera initialization failed. Check permissions.';
+      });
+    </script>
   </body>
 </html>
