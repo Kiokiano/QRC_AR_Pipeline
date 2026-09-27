@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Rear Camera WebAR - Clone Helmet</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-face-aframe.prod.js"></script>
+    <style>
+      body { margin: 0; overflow: hidden; }
+      #ui-overlay {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 999;
+        color: #fff;
+        background: rgba(0,0,0,0.6);
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-family: sans-serif;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="ui-overlay">Rear Camera Active | Point at target face</div>
+    <a-scene
+      mindar-face="filterMinCF:0.001; filterBeta: 0.01; facingMode: environment"
+      color-space="sRGB"
+      renderer="colorManagement: true, physicallyCorrectLights: true"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false">
+      
+      <a-assets>
+        <a-asset-item id="helmetModel" src="./assets/ready_clone_helmet_raw.glb"></a-asset-item>
+      </a-assets>
+
+      <a-camera active="false" position="0 0 0"></a-camera>
+
+      <!-- Face Tracker Anchor -->
+      <a-entity mindar-face-target="anchorIndex: 168">
+        <!-- Built-in head occluder for depth masking -->
+        <a-entity mindar-face-occluder></a-entity>
+        <!-- Centered, normalized helmet -->
+        <a-gltf-model
+          src="#helmetModel"
+          position="0 0 0"
+          rotation="0 0 0"
+          scale="1 1 1">
+        </a-gltf-model>
+      </a-entity>
+    </a-scene>
+  </body>
+</html>
