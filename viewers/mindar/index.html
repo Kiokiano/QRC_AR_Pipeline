@@ -58,26 +58,31 @@
         gap: 12px;
       }
 
-      .btn-switch {
+      .btn-ar {
         background: #2563eb;
         color: #ffffff;
         border: none;
-        padding: 12px 24px;
+        padding: 12px 20px;
         border-radius: 9999px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 600;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
         cursor: pointer;
         transition: transform 0.1s ease, background-color 0.2s ease;
       }
 
-      .btn-switch:active {
+      .btn-ar.secondary {
+        background: rgba(30, 41, 59, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+      }
+
+      .btn-ar:active {
         transform: scale(0.96);
-        background: #1d4ed8;
       }
 
       .a-enter-vr {
@@ -89,12 +94,15 @@
     <div id="hud-container">
       <div id="status-pill">Starting Engine...</div>
       <div id="action-bar">
-        <button id="switch-btn" class="btn-switch">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button id="switch-btn" class="btn-ar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20 10c0-4.418-3.582-8-8-8s-8 3.582-8 8c0 1.84.624 3.535 1.674 4.885L4 18l3.115-1.674A7.95 7.95 0 0 0 12 18c4.418 0 8-3.582 8-8z"></path>
             <path d="m16 14-4 4-4-4"></path>
           </svg>
-          Flip Camera
+          Flip Cam
+        </button>
+        <button id="toggle-head-btn" class="btn-ar secondary">
+          Hide Head
         </button>
       </div>
     </div>
@@ -112,9 +120,14 @@
 
       <a-camera active="false" position="0 0 0"></a-camera>
 
+      <!-- Face Anchor Target -->
       <a-entity mindar-face-target="anchorIndex: 168">
-        <a-entity mindar-face-occluder></a-entity>
+        <!-- Opaque Reference Head Model for Calibration -->
+        <a-entity id="reference-head" mindar-face-default-face-mesh material="color: #64748b; roughness: 0.6; metalness: 0.1; opacity: 0.9; transparent: true"></a-entity>
+
+        <!-- Normalized Helmet Model -->
         <a-gltf-model
+          id="helmet"
           src="#helmetModel"
           position="0 0 0"
           rotation="0 0 0"
@@ -127,14 +140,16 @@
       const sceneEl = document.querySelector('a-scene');
       const statusPill = document.getElementById('status-pill');
       const switchBtn = document.getElementById('switch-btn');
+      const toggleHeadBtn = document.getElementById('toggle-head-btn');
+      const refHead = document.getElementById('reference-head');
 
       let hasInitializedRearCamera = false;
       let isRearCamera = false;
+      let headVisible = true;
 
       sceneEl.addEventListener('arReady', () => {
         const arSystem = sceneEl.systems['mindar-face-system'];
 
-        // Initial launch flip to rear camera - executes only once
         if (!hasInitializedRearCamera) {
           hasInitializedRearCamera = true;
           isRearCamera = true;
@@ -147,7 +162,6 @@
         }
       });
 
-      // User tap listener: toggle camera and track state cleanly
       switchBtn.addEventListener('click', () => {
         const arSystem = sceneEl.systems['mindar-face-system'];
         if (arSystem) {
@@ -155,6 +169,12 @@
           statusPill.textContent = isRearCamera ? 'Active | Rear Camera' : 'Active | Front Camera';
           arSystem.switchCamera();
         }
+      });
+
+      toggleHeadBtn.addEventListener('click', () => {
+        headVisible = !headVisible;
+        refHead.setAttribute('visible', headVisible);
+        toggleHeadBtn.textContent = headVisible ? 'Hide Head' : 'Show Head';
       });
 
       sceneEl.addEventListener('arError', () => {
