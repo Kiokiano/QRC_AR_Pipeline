@@ -21,6 +21,12 @@
         user-select: none;
       }
 
+      /* Force MindAR video feed to render unmirrored (true rear-camera view) */
+      video {
+        transform: scaleX(1) !important;
+        -webkit-transform: scaleX(1) !important;
+      }
+
       .mindar-ui-overlay {
         display: none !important;
       }
@@ -88,7 +94,7 @@
       </div>
     </div>
 
-    <!-- Inject facingMode: environment directly into navigator constraints before MindAR mounts -->
+    <!-- Force rear camera constraint at media capture level -->
     <script>
       const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
       navigator.mediaDevices.getUserMedia = function(constraints) {
@@ -112,7 +118,7 @@
 
       <a-camera active="false" position="0 0 0"></a-camera>
 
-      <!-- Target Anchor: Landmark 168 (Bridge of nose between eyes) -->
+      <!-- Target Anchor: Landmark 168 -->
       <a-entity id="face-target" mindar-face-target="anchorIndex: 168">
         
         <!-- Scaled Reference Head Proxy -->
@@ -149,14 +155,24 @@
       const refHeadGroup = document.getElementById('reference-head-group');
       const helmet = document.getElementById('helmet');
       const faceTarget = document.getElementById('face-target');
+      const sceneEl = document.querySelector('a-scene');
 
       let headVisible = true;
       let xrayMode = false;
 
-      // Event listeners for tracking lock status
+      // Ensure underlying video element is unmirrored once injected
+      sceneEl.addEventListener('arReady', () => {
+        const video = document.querySelector('video');
+        if (video) {
+          video.style.transform = 'scaleX(1)';
+          video.style.webkitTransform = 'scaleX(1)';
+        }
+      });
+
+      // Tracking state listeners
       faceTarget.addEventListener('targetFound', () => {
         statusPill.textContent = 'Locked: Face Detected';
-        statusPill.style.background = 'rgba(22, 101, 52, 0.85)'; // Green indicator
+        statusPill.style.background = 'rgba(22, 101, 52, 0.85)';
       });
 
       faceTarget.addEventListener('targetLost', () => {
