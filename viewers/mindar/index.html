@@ -55,26 +55,19 @@
         pointer-events: auto;
         display: flex;
         gap: 8px;
-        flex-wrap: wrap;
-        justify-content: center;
       }
 
       .btn-ar {
-        background: #2563eb;
+        background: rgba(30, 41, 59, 0.85);
         color: #ffffff;
-        border: none;
-        padding: 10px 16px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 10px 18px;
         border-radius: 9999px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         font-size: 13px;
         font-weight: 600;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         cursor: pointer;
-      }
-
-      .btn-ar.secondary {
-        background: rgba(30, 41, 59, 0.85);
-        border: 1px solid rgba(255, 255, 255, 0.2);
       }
 
       .btn-ar:active {
@@ -88,13 +81,23 @@
   </head>
   <body>
     <div id="hud-container">
-      <div id="status-pill">Starting Engine...</div>
+      <div id="status-pill">Rear Camera: Searching for Face...</div>
       <div id="action-bar">
-        <button id="switch-btn" class="btn-ar">Flip Cam</button>
-        <button id="xray-btn" class="btn-ar secondary">X-Ray Helmet</button>
-        <button id="head-btn" class="btn-ar secondary">Hide Head</button>
+        <button id="xray-btn" class="btn-ar">X-Ray Helmet</button>
+        <button id="head-btn" class="btn-ar">Hide Head</button>
       </div>
     </div>
+
+    <!-- Inject facingMode: environment directly into navigator constraints before MindAR mounts -->
+    <script>
+      const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+      navigator.mediaDevices.getUserMedia = function(constraints) {
+        if (constraints && constraints.video) {
+          constraints.video.facingMode = { ideal: "environment" };
+        }
+        return originalGetUserMedia(constraints);
+      };
+    </script>
 
     <a-scene
       mindar-face="filterMinCF:0.001; filterBeta: 0.01"
@@ -109,28 +112,26 @@
 
       <a-camera active="false" position="0 0 0"></a-camera>
 
-      <!-- Canonical Face Landmark 168 (Center of eyes / glabella) -->
-      <a-entity mindar-face-target="anchorIndex: 168">
+      <!-- Target Anchor: Landmark 168 (Bridge of nose between eyes) -->
+      <a-entity id="face-target" mindar-face-target="anchorIndex: 168">
         
-        <!-- Scaled Reference Head Proxy: 1:1 human dimensions (0.16m wide, 0.22m high, 0.20m depth) -->
+        <!-- Scaled Reference Head Proxy -->
         <a-entity id="reference-head-group">
-          <!-- Cranium shell -->
           <a-sphere
             radius="0.095"
             position="0 0.01 -0.04"
-            material="color: #38bdf8; opacity: 0.45; transparent: true; wireframe: true">
+            material="color: #38bdf8; opacity: 0.5; transparent: true; wireframe: true">
           </a-sphere>
-          <!-- Facial plane / jaw proxy -->
           <a-box
             width="0.14"
             height="0.18"
             depth="0.15"
             position="0 -0.03 -0.02"
-            material="color: #64748b; opacity: 0.35; transparent: true; wireframe: true">
+            material="color: #64748b; opacity: 0.4; transparent: true; wireframe: true">
           </a-box>
         </a-entity>
 
-        <!-- Normalized Helmet Model -->
+        <!-- Helmet Model -->
         <a-gltf-model
           id="helmet"
           src="#helmetModel"
@@ -142,41 +143,25 @@
     </a-scene>
 
     <script>
-      const sceneEl = document.querySelector('a-scene');
       const statusPill = document.getElementById('status-pill');
-      const switchBtn = document.getElementById('switch-btn');
       const xrayBtn = document.getElementById('xray-btn');
       const headBtn = document.getElementById('head-btn');
       const refHeadGroup = document.getElementById('reference-head-group');
       const helmet = document.getElementById('helmet');
+      const faceTarget = document.getElementById('face-target');
 
-      let hasInitializedRearCamera = false;
-      let isRearCamera = false;
       let headVisible = true;
       let xrayMode = false;
 
-      sceneEl.addEventListener('arReady', () => {
-        const arSystem = sceneEl.systems['mindar-face-system'];
-
-        if (!hasInitializedRearCamera) {
-          hasInitializedRearCamera = true;
-          isRearCamera = true;
-          statusPill.textContent = 'Active | Rear Camera';
-          setTimeout(() => {
-            arSystem.switchCamera();
-          }, 300);
-        } else {
-          statusPill.textContent = isRearCamera ? 'Active | Rear Camera' : 'Active | Front Camera';
-        }
+      // Event listeners for tracking lock status
+      faceTarget.addEventListener('targetFound', () => {
+        statusPill.textContent = 'Locked: Face Detected';
+        statusPill.style.background = 'rgba(22, 101, 52, 0.85)'; // Green indicator
       });
 
-      switchBtn.addEventListener('click', () => {
-        const arSystem = sceneEl.systems['mindar-face-system'];
-        if (arSystem) {
-          isRearCamera = !isRearCamera;
-          statusPill.textContent = isRearCamera ? 'Active | Rear Camera' : 'Active | Front Camera';
-          arSystem.switchCamera();
-        }
+      faceTarget.addEventListener('targetLost', () => {
+        statusPill.textContent = 'Rear Camera: Searching for Face...';
+        statusPill.style.background = 'rgba(15, 23, 42, 0.85)';
       });
 
       headBtn.addEventListener('click', () => {
@@ -200,10 +185,6 @@
             }
           });
         }
-      });
-
-      sceneEl.addEventListener('arError', () => {
-        statusPill.textContent = 'Camera initialization failed';
       });
     </script>
   </body>
