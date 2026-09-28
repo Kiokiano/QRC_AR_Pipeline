@@ -47,7 +47,6 @@
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         font-size: 13px;
         font-weight: 500;
-        letter-spacing: 0.3px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         border: 1px solid rgba(255,255,255,0.15);
       }
@@ -55,30 +54,27 @@
       #action-bar {
         pointer-events: auto;
         display: flex;
-        gap: 12px;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
       }
 
       .btn-ar {
         background: #2563eb;
         color: #ffffff;
         border: none;
-        padding: 12px 20px;
+        padding: 10px 16px;
         border-radius: 9999px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         cursor: pointer;
-        transition: transform 0.1s ease, background-color 0.2s ease;
       }
 
       .btn-ar.secondary {
         background: rgba(30, 41, 59, 0.85);
         border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
       }
 
       .btn-ar:active {
@@ -94,16 +90,9 @@
     <div id="hud-container">
       <div id="status-pill">Starting Engine...</div>
       <div id="action-bar">
-        <button id="switch-btn" class="btn-ar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 10c0-4.418-3.582-8-8-8s-8 3.582-8 8c0 1.84.624 3.535 1.674 4.885L4 18l3.115-1.674A7.95 7.95 0 0 0 12 18c4.418 0 8-3.582 8-8z"></path>
-            <path d="m16 14-4 4-4-4"></path>
-          </svg>
-          Flip Cam
-        </button>
-        <button id="toggle-head-btn" class="btn-ar secondary">
-          Hide Head
-        </button>
+        <button id="switch-btn" class="btn-ar">Flip Cam</button>
+        <button id="xray-btn" class="btn-ar secondary">X-Ray Helmet</button>
+        <button id="head-btn" class="btn-ar secondary">Toggle Head</button>
       </div>
     </div>
 
@@ -116,14 +105,23 @@
       
       <a-assets>
         <a-asset-item id="helmetModel" src="./assets/ready_clone_helmet_raw.glb"></a-asset-item>
+        <!-- Canonical Head Reference GLB from MindAR repository -->
+        <a-asset-item id="headModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/face-tracking/assets/sparkar/headOccluder.glb"></a-asset-item>
       </a-assets>
 
       <a-camera active="false" position="0 0 0"></a-camera>
 
       <!-- Face Anchor Target -->
       <a-entity mindar-face-target="anchorIndex: 168">
-        <!-- Opaque Reference Head Model for Calibration -->
-        <a-entity id="reference-head" mindar-face-default-face-mesh material="color: #64748b; roughness: 0.6; metalness: 0.1; opacity: 0.9; transparent: true"></a-entity>
+        <!-- 3D Canonical Reference Mannequin Head (Grey) -->
+        <a-gltf-model
+          id="reference-head"
+          src="#headModel"
+          position="0 0 0"
+          rotation="0 0 0"
+          scale="1 1 1"
+          visible="true">
+        </a-gltf-model>
 
         <!-- Normalized Helmet Model -->
         <a-gltf-model
@@ -140,12 +138,15 @@
       const sceneEl = document.querySelector('a-scene');
       const statusPill = document.getElementById('status-pill');
       const switchBtn = document.getElementById('switch-btn');
-      const toggleHeadBtn = document.getElementById('toggle-head-btn');
+      const xrayBtn = document.getElementById('xray-btn');
+      const headBtn = document.getElementById('head-btn');
       const refHead = document.getElementById('reference-head');
+      const helmet = document.getElementById('helmet');
 
       let hasInitializedRearCamera = false;
       let isRearCamera = false;
       let headVisible = true;
+      let xrayMode = false;
 
       sceneEl.addEventListener('arReady', () => {
         const arSystem = sceneEl.systems['mindar-face-system'];
@@ -171,10 +172,27 @@
         }
       });
 
-      toggleHeadBtn.addEventListener('click', () => {
+      headBtn.addEventListener('click', () => {
         headVisible = !headVisible;
         refHead.setAttribute('visible', headVisible);
-        toggleHeadBtn.textContent = headVisible ? 'Hide Head' : 'Show Head';
+        headBtn.textContent = headVisible ? 'Hide Head' : 'Show Head';
+      });
+
+      xrayBtn.addEventListener('click', () => {
+        xrayMode = !xrayMode;
+        xrayBtn.textContent = xrayMode ? 'Solid Helmet' : 'X-Ray Helmet';
+
+        const mesh = helmet.getObject3D('mesh');
+        if (mesh) {
+          mesh.traverse((node) => {
+            if (node.isMesh && node.material) {
+              node.material.transparent = true;
+              node.material.opacity = xrayMode ? 0.35 : 1.0;
+              node.material.wireframe = xrayMode;
+              node.material.needsUpdate = true;
+            }
+          });
+        }
       });
 
       sceneEl.addEventListener('arError', () => {
