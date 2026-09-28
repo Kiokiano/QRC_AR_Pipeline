@@ -20,7 +20,7 @@
         -webkit-user-select: none;
         user-select: none;
       }
-      
+
       .mindar-ui-overlay {
         display: none !important;
       }
@@ -92,7 +92,7 @@
       <div id="action-bar">
         <button id="switch-btn" class="btn-ar">Flip Cam</button>
         <button id="xray-btn" class="btn-ar secondary">X-Ray Helmet</button>
-        <button id="head-btn" class="btn-ar secondary">Toggle Head</button>
+        <button id="head-btn" class="btn-ar secondary">Hide Head</button>
       </div>
     </div>
 
@@ -105,23 +105,30 @@
       
       <a-assets>
         <a-asset-item id="helmetModel" src="./assets/ready_clone_helmet_raw.glb"></a-asset-item>
-        <!-- Canonical Head Reference GLB from MindAR repository -->
-        <a-asset-item id="headModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/face-tracking/assets/sparkar/headOccluder.glb"></a-asset-item>
       </a-assets>
 
       <a-camera active="false" position="0 0 0"></a-camera>
 
-      <!-- Face Anchor Target -->
+      <!-- Canonical Face Landmark 168 (Center of eyes / glabella) -->
       <a-entity mindar-face-target="anchorIndex: 168">
-        <!-- 3D Canonical Reference Mannequin Head (Grey) -->
-        <a-gltf-model
-          id="reference-head"
-          src="#headModel"
-          position="0 0 0"
-          rotation="0 0 0"
-          scale="1 1 1"
-          visible="true">
-        </a-gltf-model>
+        
+        <!-- Scaled Reference Head Proxy: 1:1 human dimensions (0.16m wide, 0.22m high, 0.20m depth) -->
+        <a-entity id="reference-head-group">
+          <!-- Cranium shell -->
+          <a-sphere
+            radius="0.095"
+            position="0 0.01 -0.04"
+            material="color: #38bdf8; opacity: 0.45; transparent: true; wireframe: true">
+          </a-sphere>
+          <!-- Facial plane / jaw proxy -->
+          <a-box
+            width="0.14"
+            height="0.18"
+            depth="0.15"
+            position="0 -0.03 -0.02"
+            material="color: #64748b; opacity: 0.35; transparent: true; wireframe: true">
+          </a-box>
+        </a-entity>
 
         <!-- Normalized Helmet Model -->
         <a-gltf-model
@@ -140,7 +147,7 @@
       const switchBtn = document.getElementById('switch-btn');
       const xrayBtn = document.getElementById('xray-btn');
       const headBtn = document.getElementById('head-btn');
-      const refHead = document.getElementById('reference-head');
+      const refHeadGroup = document.getElementById('reference-head-group');
       const helmet = document.getElementById('helmet');
 
       let hasInitializedRearCamera = false;
@@ -174,7 +181,7 @@
 
       headBtn.addEventListener('click', () => {
         headVisible = !headVisible;
-        refHead.setAttribute('visible', headVisible);
+        refHeadGroup.setAttribute('visible', headVisible);
         headBtn.textContent = headVisible ? 'Hide Head' : 'Show Head';
       });
 
